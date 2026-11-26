@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>人體工學角度大師：健康體態大挑戰</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", Roboto, sans-serif;
+    }
+    body {
+      background: radial-gradient(circle at center, #f0fdfa 0%, #e0f2fe 100%);
+      color: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 960px;
+      background: #ffffff;
+      border: 3px solid #38bdf8;
+      border-radius: 20px;
+      box-shadow: 0 12px 36px rgba(14, 165, 233, 0.18);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* 頂部導航與情景切換 */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 14px 22px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .title-area h1 {
+      font-size: 19px;
+      color: #0284c7;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .title-area p {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn-tab {
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 800;
+      border: 2px solid #cbd5e1;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-tab.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+    }
+
+    /* 遊戲主操作區：左側 2D 骨架畫布 + 右側操作指引面板 */
+    .stage-wrapper {
+      display: flex;
+      flex-direction: row;
+      background: #ffffff;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    @media (max-width: 768px) {
+      .stage-wrapper {
+        flex-direction: column;
+      }
+    }
+
+    /* 畫布區 */
+    .canvas-box {
+      flex: 1.45;
+      position: relative;
+      background: linear-gradient(180deg, #e0f2fe 0%, #f0fdfa 70%, #dcfce7 100%);
+      min-height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      max-width: 560px;
+      height: auto;
+    }
+
+    /* 右側操作提示與狀態 */
+    .info-sidebar {
+      flex: 0.95;
+      background: #f8fafc;
+      border-left: 2px solid #e2e8f0;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .guide-card {
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .guide-card h3 {
+      font-size: 14px;
+      color: #0369a1;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .guide-card p {
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.6;
+    }
+
+    .status-summary {
+      background: #f0fdf4;
+      border: 2px dashed #16a34a;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+    .status-summary h4 {
+      font-size: 13px;
+      color: #15803d;
+      font-weight: 700;
+    }
+    .status-summary .hint-text {
+      font-size: 13px;
+      color: #334155;
+      font-weight: 800;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    /* 下方滑桿控制面板 */
+    .controls-grid {
+      background: #ffffff;
+      padding: 18px 22px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+    }
+    .slider-box {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 800;
+      color: #334155;
+    }
+    .slider-header span.val {
+      color: #0284c7;
+      font-size: 15px;
+    }
+    .slider-box input[type="range"] {
+      width: 100%;
+      height: 7px;
+      border-radius: 4px;
+      background: #cbd5e1;
+      outline: none;
+      accent-color: #0284c7;
+      cursor: pointer;
+    }
+    .slider-hint {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    /* 底部功能與提交按鈕 */
+    .action-bar {
+      background: #f8fafc;
+      border-top: 2px solid #e2e8f0;
+      padding: 14px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .btn-reset {
+      background: #64748b;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-reset:hover { background: #475569; }
+
+    .btn-submit {
+      background: #16a34a;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 800;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-submit:hover:not(:disabled) {
+      background: #15803d;
+      transform: translateY(-2px);
+    }
+    .btn-submit:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* 彈窗基礎：改用 position: fixed，確保 100% 覆蓋視野並居中展示 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 9999;
+    }
+    .modal-overlay.hidden {
+      display: none !important;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border: 3px solid #38bdf8;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 620px;
+      padding: 24px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* 首頁選擇情境卡片按鈕 */
+    .welcome-btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      width: 100%;
+      margin: 18px 0 10px;
+    }
+    .welcome-card-btn {
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 18px 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .welcome-card-btn:hover {
+      border-color: #0284c7;
+      background: #e0f2fe;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px rgba(2, 132, 199, 0.2);
+    }
+    .welcome-card-btn .card-icon { font-size: 38px; }
+    .welcome-card-btn .card-title { font-size: 15px; font-weight: 800; color: #0369a1; }
+    .welcome-card-btn .card-desc { font-size: 12px; color: #64748b; line-height: 1.4; }
+
+    /* 評分彈窗專用樣式 */
+    .score-circle-box {
+      margin: 8px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .score-banner {
+      font-size: 46px;
+      font-weight: 900;
+      color: #0284c7;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .score-banner span {
+      font-size: 20px;
+      color: #64748b;
+      font-weight: 800;
+    }
+    .score-badge {
+      font-size: 14px;
+      font-weight: 800;
+      padding: 4px 18px;
+      border-radius: 20px;
+      margin-top: 6px;
+    }
+
+    /* 專屬鼓勵句子卡片 */
+    .encouragement-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+      border: 1.5px solid #86efac;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin: 10px 0 12px;
+      width: 100%;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.12);
+    }
+    .encouragement-card .quote-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .encouragement-card .quote-text {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #14532d;
+      line-height: 1.5;
+    }
+
+    .stress-summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #f1f5f9;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+      width: 100%;
+      margin: 4px 0 12px;
+    }
+
+    .report-list {
+      width: 100%;
+      text-align: left;
+      margin: 6px 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 240px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .report-item {
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.5;
+      border-left: 5px solid #64748b;
+      background: #f8fafc;
+    }
+    .report-item.pass {
+      border-left-color: #16a34a;
+      background: #f0fdf4;
+      color: #14532d;
+    }
+    .report-item.fail {
+      border-left-color: #dc2626;
+      background: #fef2f2;
+      color: #7f1d1d;
+    }
+    .report-item .advice {
+      margin-top: 5px;
+      font-size: 12.5px;
+      font-weight: 600;
+      display: block;
+      color: #b91c1c;
+    }
+    .report-item.pass .advice {
+      color: #15803d;
+    }
+
+    .modal-btn-row {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      justify-content: center;
+      margin-top: 6px;
+    }
+    .btn-action {
+      background: #0284c7;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 15px;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-action:hover { background: #0369a1; }
+    .btn-action.secondary {
+      background: #64748b;
+    }
+    .btn-action.secondary:hover { background: #475569; }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <!-- 頂部導航與情景切換按鈕 -->
+    <div class="header-bar">
+      <div class="title-area">
+        <h1>🧍‍♂️📐 人體工學角度大師</h1>
+        <p>獨立姿勢評測：調節各關節角度，提交後獲取專屬 100 分制診斷與改善指引！</p>
+      </div>
+      <div class="mode-tabs">
+        <button class="btn-tab active" id="tab-desk" onclick="changeMode('DESK')">💻 電腦工作站情景</button>
+        <button class="btn-tab" id="tab-phone" onclick="changeMode('PHONE')">📱 手機防低頭情景</button>
+      </div>
+    </div>
+
+    <!-- 舞台核心區：左側 2D 畫布 + 右側指引說明 -->
+    <div class="stage-wrapper">
+      <div class="canvas-box">
+        <canvas id="mannequinCanvas" width="560" height="400"></canvas>
+      </div>
+
+      <div class="info-sidebar">
+        <div class="guide-card">
+          <h3 id="sidebar-scenario-title">💻 電腦工作站設定指引</h3>
+          <p id="sidebar-scenario-desc">
+            長期使用電腦容易引發頸椎前傾、腕管綜合症（滑鼠手）與腰背痠痛。<br><br>
+            請拖動下方滑桿，將<b>頭頸俯視角、椅背後仰角、手肘關節屈曲度、膝蓋關節及螢幕高度</b>調整至健康角度，然後點擊下方<b>「📋 提交姿勢評定」</b>。
+          </p>
+        </div>
+
+        <div class="status-summary">
+          <h4>當前調整狀態</h4>
+          <div class="hint-text" id="ui-status-hint">調整關節角度完成後，點擊下方按鈕獲取獨立評測結果！</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 下方滑桿控制面板 -->
+    <div class="controls-grid" id="controls-grid">
+      <!-- 依據情景動態注入控制滑桿 -->
+    </div>
+
+    <!-- 底部功能與提交按鈕 -->
+    <div class="action-bar">
+      <button class="btn-reset" onclick="resetToBadPose()">🔄 恢復預設不良姿勢</button>
+      <button class="btn-submit" id="btn-main-submit" onclick="submitAssessment()">
+        📋 提交姿勢評定（獨立計算 100 分）
+      </button>
+    </div>
+  </div>
+
+  <!-- 彈窗 1：首頁情境選擇與遊戲說明（免登入） -->
+  <div class="modal-overlay" id="introModal">
+    <div class="modal-card">
+      <div style="font-size:48px; margin-bottom:6px;">🧍‍♀️📐💻</div>
+      <h2 style="color:#0284c7; margin-bottom:8px;">歡迎來到人體工學角度大師</h2>
+      <p style="font-size:13px; color:#475569; line-height:1.6; max-width:480px;">
+        在使用手機與電腦時，錯誤的姿勢會讓頸椎承受多達 <b>27 公斤</b>的額外負擔！<br>
+        請選擇你想挑戰的健康情景，調整虛擬骨架的各個關節角度。提交後將彈出專屬評測框，獨立指出你的姿勢在 <b>100 分</b> 中能獲得多少分，並提供詳細改善建議。查閱後退出即可隨時重新微調再提交！
+      </p>
+
+      <div class="welcome-btn-grid">
+        <div class="welcome-card-btn" onclick="selectInitialMode('DESK')">
+          <div class="card-icon">💻</div>
+          <div class="card-title">電腦工作站情景</div>
+          <div class="card-desc">調校頸部、人體工學椅靠背、手肘與膝蓋，告別駝背與滑鼠手！</div>
+        </div>
+        <div class="welcome-card-btn" onclick="selectInitialMode('PHONE')">
+          <div class="card-icon">📱</div>
+          <div class="card-title">手機使用情景</div>
+          <div class="card-desc">擊退 60° 短訊頸，學會抬高雙手保護脊椎！</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗 2：獨立評測結果和改善建議框（一個框寫出評測結果與改善建議，讓用戶退出重新微調再提交） -->
+  <div class="modal-overlay hidden" id="resultModal">
+    <div class="modal-card">
+      <div style="font-size:44px; margin-bottom:4px;" id="res-icon">🏆</div>
+      <h2 id="res-title" style="color:#0284c7; margin-bottom:2px;">獨立姿勢評測報告</h2>
+
+      <!-- 獨立分數展示區 -->
+      <div class="score-circle-box">
+        <div class="score-banner" id="res-score-text">
+          85 <span>/ 100 分</span>
+        </div>
+        <div class="score-badge" id="res-badge">良好體態</div>
+      </div>
+
+      <!-- 專屬勵志鼓勵句子 -->
+      <div class="encouragement-card" id="res-encouragement-box">
+        <div class="quote-icon" id="res-quote-icon">🌟</div>
+        <div class="quote-text" id="res-quote-text">太棒了！你的骨骼與肌肉正在為你的好體態歡呼！</div>
+      </div>
+
+      <div class="stress-summary-row" id="res-stress-info">
+        <!-- 動態注入頸椎負荷數據 -->
+      </div>
+
+      <!-- 獨立改善建議清單 -->
+      <div class="report-list" id="res-report-list">
+        <!-- 動態注入各關節分析與改善建議 -->
+      </div>
+
+      <!-- 退出重新微調操作列 -->
+      <div class="modal-btn-row">
+        <button class="btn-action" onclick="exitAndRefine()">🔙 退出評測，重新微調姿勢</button>
+        <button class="btn-action secondary" onclick="switchOtherScenario()">🔄 切換另一情景</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- 遊戲全域狀態 ---
+    let currentMode = "DESK"; // 'DESK' 或 'PHONE'
+
+    // 電腦工作站姿勢參數
+    const deskPose = {
+      neckAngle: 35,     // 頸部俯視角 (0~55°)，最佳 0~15°
+      backAngle: 75,     // 腰背靠椅角 (65~125°)，最佳 95~105°
+      elbowAngle: 125,   // 手肘彎曲角 (60~140°)，最佳 90~100°
+      kneeAngle: 70,     // 膝蓋屈曲角 (60~130°)，最佳 90~100°
+      screenHeight: 20   // 螢幕升降高度 (0~60)，最佳 35~52
+    };
+
+    // 手機模式參數
+    const phonePose = {
+      phoneNeckAngle: 50,  // 手機低頭角 (0~60°)，最佳 0~15°
+      armLiftAngle: 25,    // 手臂抬高角 (15~70°)，最佳 48~65°
+      spineStraight: 75    // 坐姿軀幹挺直度 (65~115°)，最佳 90~100°
+    };
+
+    const canvas = document.getElementById("mannequinCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // 首頁選擇情境
+    function selectInitialMode(mode) {
+      document.getElementById("introModal").classList.add("hidden");
+      changeMode(mode);
+    }
+
+    // 切換情景
+    function changeMode(mode) {
+      currentMode = mode;
+      document.getElementById("tab-desk").classList.toggle("active", mode === "DESK");
+      document.getElementById("tab-phone").classList.toggle("active", mode === "PHONE");
+
+      const titleEl = document.getElementById("sidebar-scenario-title");
+      const descEl = document.getElementById("sidebar-scenario-desc");
+
+      if (mode === "DESK") {
+        titleEl.textContent = "💻 電腦工作站設定指引";
+        descEl.innerHTML = "請調整下方 5 個滑桿（頭頸俯視角、椅背後仰角、手肘彎曲角、膝蓋彎曲角及螢幕架高度）。手肘彎曲時手臂會自然連動伸展！調整完畢後點擊「<b>📋 提交姿勢評定</b>」，系統將在獨立視窗中展示分數與逐項改善指引。";
+      } else {
+        titleEl.textContent = "📱 手機防低頭設定指引";
+        descEl.innerHTML = "低頭看手機會讓頸椎負擔劇增！請調整<b>低頭角度、雙手舉起高度及腰背挺直度</b>，擺出健康的滑手機體態，點擊下方提交即可獲取獨立評分與改善建議。";
+      }
+
+      renderControls();
+      drawScene();
+    }
+
+    // 渲染滑桿
+    function renderControls() {
+      const box = document.getElementById("controls-grid");
+      box.innerHTML = "";
+
+      if (currentMode === "DESK") {
+        box.innerHTML = `
+          <div class="slider-box">
+            <div class="slider-header">
+              <span>🗣️ 頸椎俯視角度</span>
+              <span class="val" id="val-neck">${deskPose.neckAngle}°</span>
+            </div>
+            <input type="range" min="0" max="55" value="${deskPose.neckAngle}" oninput="onParamChange('desk', 'neckAngle', this.value)">
+            <div class="slider-hint">設定低頭看螢幕的傾角</div>
+          </div>
+
+          <div class="slider-box">
+            <div class="slider-header">
+              <span>🪑 腰背靠椅角度</span>
+              <span class="val" id="val-back">${deskPose.backAngle}°</span>
+            </div>
+            <input type="range" min="65" max="125" value="${deskPose.backAngle}" oninput="onParamChange('desk', 'backAngle', this.value)">
+            <div class="slider-hint">設定上半身後仰或前傾（椅背同步動態連動）</div>
+          </div>
+
+          <div class="slider-box">
+            <div class="slider-header">
+              <span>💪 手肘彎曲角度</span>
+              <span class="val" id="val-elbow">${deskPose.elbowAngle}°</span>
+            </div>
+            <input type="range" min="60" max="140" value="${deskPose.elbowAngle}" oninput="onParamChange('desk', 'elbowAngle', this.value)">
+            <div class="slider-hint">設定打字手肘角度（人體工學動態伸展連動）</div>
+          </div>
+
+          <div class="slider-box">
+            <div class="slider-header">
+              <span>🦵 膝關節彎曲角</span>
+              <span class="val" id="val-knee">${deskPose.kneeAngle}°</span>
+            </div>
+            <input type="range" min="60" max="130" value="${deskPose.kneeAngle}" oninput="onParamChange('desk', 'kneeAngle', this.value)">
+            <div class="slider-hint">設定雙腿與腳踏地面角度</div>
+          </div>
+
+          <div class="slider-box">
+            <div class="slider-header">
+              <span>🖥️ 螢幕架高度</span>
+              <span class="val" id="val-screen">${deskPose.screenHeight}</span>
+            </div>
+            <input type="range" min="0" max="60" value="${deskPose.screenHeight}" oninput="onParamChange('desk', 'screenHeight', this.value)">
+            <div class="slider-hint">調整螢幕中心高度至平視</div>
+          </div>
+        `;
+      } else {
+        box.innerHTML = `
+          <div class="slider-box">
+            <div class="slider-header">
+              <span>🗣️ 低頭看手機角</span>
+              <span class="val" id="val-pneck">${phonePose.phoneNeckAngle}°</span>
+            </div>
+            <input type="range" min="0" max="60" value="${phonePose.phoneNeckAngle}" oninput="onParamChange('phone', 'phoneNeckAngle', this.value)">
+            <div class="slider-hint">設定低頭看手機的頸部傾角</div>
+          </div>
+
+          <div class="slider-box">
+            <div class="slider-header">
+              <span>📱 雙手舉機高度</span>
+              <span class="val" id="val-parm">${phonePose.armLiftAngle}°</span>
+            </div>
+            <input type="range" min="15" max="70" value="${phonePose.armLiftAngle}" oninput="onParamChange('phone', 'armLiftAngle', this.value)">
+            <div class="slider-hint">設定將手機抬高到視野的高度</div>
+          </div>
+
+          <div class="slider-box">
+            <div class="slider-header">
+              <span>🧘 軀幹挺直度</span>
+              <span class="val" id="val-pspine">${phonePose.spineStraight}°</span>
+            </div>
+            <input type="range" min="65" max="115" value="${phonePose.spineStraight}" oninput="onParamChange('phone', 'spineStraight', this.value)">
+            <div class="slider-hint">設定背部挺直或駝背程度</div>
+          </div>
+        `;
+      }
+    }
+
+    function onParamChange(target, key, val) {
+      const num = parseFloat(val);
+      if (target === 'desk') {
+        deskPose[key] = num;
+        const el = document.getElementById("val-" + key.replace("Angle", "").toLowerCase());
+        if (el) el.textContent = num + (key === 'screenHeight' ? '' : '°');
+      } else {
+        phonePose[key] = num;
+        if (key === 'phoneNeckAngle') document.getElementById("val-pneck").textContent = num + "°";
+        if (key === 'armLiftAngle') document.getElementById("val-parm").textContent = num + "°";
+        if (key === 'spineStraight') document.getElementById("val-pspine").textContent = num + "°";
+      }
+      document.getElementById("ui-status-hint").textContent = "姿勢已調整，點擊下方「📋 提交姿勢評定」獲取獨立報告！";
+      drawScene();
+    }
+
+    function resetToBadPose() {
+      if (currentMode === "DESK") {
+        deskPose.neckAngle = 40;
+        deskPose.backAngle = 70;
+        deskPose.elbowAngle = 130;
+        deskPose.kneeAngle = 65;
+        deskPose.screenHeight = 10;
+      } else {
+        phonePose.phoneNeckAngle = 55;
+        phonePose.armLiftAngle = 20;
+        phonePose.spineStraight = 70;
+      }
+      renderControls();
+      drawScene();
+    }
+
+    // --- 計算獨立 100 分制成績與改善建議 ---
+    function computeEvaluation() {
+      let neckDeg = currentMode === "DESK" ? deskPose.neckAngle : phonePose.phoneNeckAngle;
+
+      // 頸椎承受重量 (Hansraj 模型)
+      let stressKg = 5.0 + (neckDeg / 60) * 22.2;
+      stressKg = Math.min(27.2, Math.max(5.0, stressKg));
+
+      let items = [];
+
+      if (currentMode === "DESK") {
+        // 5 個評分維度，各佔 20 分，滿分 100 分
+        const neckOk = (deskPose.neckAngle >= 0 && deskPose.neckAngle <= 15);
+        items.push({
+          name: "頸部俯視角度",
+          ok: neckOk,
+          scorePart: neckOk ? 20 : Math.max(0, Math.round(20 - (deskPose.neckAngle - 15) * 0.5)),
+          maxPart: 20,
+          current: `${deskPose.neckAngle}°`,
+          ideal: "0° ~ 15°",
+          advice: neckOk ? "優秀！視線平視或微俯，頸椎承受正常自重。" : "改善建議：低頭角度過大！請使用螢幕支架墊高螢幕，讓螢幕頂端約與眼睛齊平，放鬆肩頸肌群。"
+        });
+
+        const backOk = (deskPose.backAngle >= 95 && deskPose.backAngle <= 108);
+        items.push({
+          name: "腰椎靠背角度",
+          ok: backOk,
+          scorePart: backOk ? 20 : (deskPose.backAngle < 95 ? Math.max(0, 20 - (95 - deskPose.backAngle)) : Math.max(0, 20 - (deskPose.backAngle - 108))),
+          maxPart: 20,
+          current: `${deskPose.backAngle}°`,
+          ideal: "95° ~ 105°",
+          advice: backOk ? "完美！微後傾 100° 坐姿配合靠背，椎間盤壓力最低。" : (deskPose.backAngle < 95 ? "改善建議：身體過度駝背前傾！請將背部貼緊椅背與腰靠，利用人體工學椅支撐腰椎。" : "改善建議：後仰角度過大，易導致腰部懸空疲勞，請調整椅背微挺立。")
+        });
+
+        const elbowOk = (deskPose.elbowAngle >= 90 && deskPose.elbowAngle <= 102);
+        items.push({
+          name: "手肘彎曲角度",
+          ok: elbowOk,
+          scorePart: elbowOk ? 20 : Math.max(0, 20 - Math.abs(deskPose.elbowAngle - 95)),
+          maxPart: 20,
+          current: `${deskPose.elbowAngle}°`,
+          ideal: "90° ~ 100°",
+          advice: elbowOk ? "非常理想！手肘自然垂落呈直角（約 90°），前臂平放桌面，手腕零負擔。" : (deskPose.elbowAngle > 102 ? "改善建議：手臂向前過度拉伸（>102°）！請拉近座椅與鍵盤距離，讓大臂自然垂直垂放，避免肩部緊繃。" : "改善建議：手肘彎曲過緊（<90°）！請稍微調高座椅或退後坐標，維持 90° 自然放鬆弧度，預防「滑鼠手」。")
+        });
+
+        const kneeOk = (deskPose.kneeAngle >= 90 && deskPose.kneeAngle <= 102);
+        items.push({
+          name: "膝關節彎曲角度",
+          ok: kneeOk,
+          scorePart: kneeOk ? 20 : Math.max(0, 20 - Math.abs(deskPose.kneeAngle - 95)),
+          maxPart: 20,
+          current: `${deskPose.kneeAngle}°`,
+          ideal: "90° ~ 100°",
+          advice: kneeOk ? "達標！大腿與地面平行，雙腳平踩地面維持良好下肢血流。" : "改善建議：膝蓋角度不佳！請調整椅面高度使雙腳能自然平踏地面，切勿向後蜷腿或盤腿。"
+        });
+
+        const screenOk = (deskPose.screenHeight >= 35 && deskPose.screenHeight <= 52);
+        items.push({
+          name: "螢幕中心高度",
+          ok: screenOk,
+          scorePart: screenOk ? 20 : Math.max(0, 20 - Math.abs(deskPose.screenHeight - 44)),
+          maxPart: 20,
+          current: `${deskPose.screenHeight} 級`,
+          ideal: "35 ~ 52 級",
+          advice: screenOk ? "很棒！螢幕中心高度適中，減少眨眼次數降低造成的乾眼問題。" : "改善建議：螢幕位置偏低，迫使頸部不自主向前下探，建議墊高螢幕或筆記型電腦增高架。"
+        });
+      } else {
+        // 手機情景：3 個評分維度（頸椎 40分、手臂舉高 30分、脊椎挺直 30分，滿分 100 分）
+        const neckOk = (phonePose.phoneNeckAngle >= 0 && phonePose.phoneNeckAngle <= 15);
+        let neckScore = neckOk ? 40 : Math.max(0, Math.round(40 - (phonePose.phoneNeckAngle - 15) * 0.8));
+        items.push({
+          name: "手機低頭角度",
+          ok: neckOk,
+          scorePart: neckScore,
+          maxPart: 40,
+          current: `${phonePose.phoneNeckAngle}°`,
+          ideal: "0° ~ 15°",
+          advice: neckOk ? "絕佳！保持平視微低頭，成功消滅「短訊頸」！" : "改善建議：低頭過度！頸椎承受超負荷重量，請將手機舉高到視線水平，不要把頭深埋下去看手機。"
+        });
+
+        const armOk = (phonePose.armLiftAngle >= 48 && phonePose.armLiftAngle <= 65);
+        let armScore = armOk ? 30 : Math.max(0, Math.round(30 - Math.abs(phonePose.armLiftAngle - 56) * 0.9));
+        items.push({
+          name: "雙手舉機高度",
+          ok: armOk,
+          scorePart: armScore,
+          maxPart: 30,
+          current: `${phonePose.armLiftAngle}°`,
+          ideal: "48° ~ 65°",
+          advice: armOk ? "良好！手肘有支撐並將手機舉至胸前或眼前。" : "改善建議：手放得太低！請雙手將手機抬高至眼部下方，可將手肘輕靠在桌上或胸腹部以節省體力。"
+        });
+
+        const spineOk = (phonePose.spineStraight >= 90 && phonePose.spineStraight <= 102);
+        let spineScore = spineOk ? 30 : Math.max(0, Math.round(30 - Math.abs(phonePose.spineStraight - 96) * 0.9));
+        items.push({
+          name: "軀幹脊椎挺直",
+          ok: spineOk,
+          scorePart: spineScore,
+          maxPart: 30,
+          current: `${phonePose.spineStraight}°`,
+          ideal: "90° ~ 100°",
+          advice: spineOk ? "坐姿挺拔自然，背部受力均勻。" : "改善建議：避免像蝦米般蜷曲在椅子或沙發上，保持挺胸坐直，維持脊椎自然 S 曲線。"
+        });
+      }
+
+      // 總分計算（0 ~ 100）
+      const totalScore = Math.min(100, Math.max(0, items.reduce((sum, item) => sum + item.scorePart, 0)));
+
+      return { stressKg, items, totalScore };
+    }
+
+    // --- 專屬鼓勵金句庫 ---
+    function getEncouragement(score) {
+      if (score >= 90) {
+        const quotes = [
+          "太完美了！你的骨骼與肌肉正在為你的黃金體態歡呼，維持這份平衡，痠痛疲勞永遠遠離你！",
+          "姿勢滿分，專注力加倍！你已精通人體工學精髓，是實至名歸的健康守護大師！",
+          "太出色了！脊椎與各關節處於最放鬆的自然狀態，讓你的身體充滿充沛活力！"
+        ];
+        return { icon: "🌟", text: quotes[Math.floor(Math.random() * quotes.length)] };
+      } else if (score >= 75) {
+        const quotes = [
+          "表現相當亮眼！距離 100 分黃金體態只差一點點，退出後微調未達標的關節，你就能突破自我！",
+          "非常棒的姿勢意識！只要把關鍵部位支撐做好，就能給身體帶來最全面的保護！",
+          "值得稱讚的良好姿態！稍微調整一下手肘或椅背，滿分榮譽就在眼前！"
+        ];
+        return { icon: "👏", text: quotes[Math.floor(Math.random() * quotes.length)] };
+      } else if (score >= 60) {
+        const quotes = [
+          "踏出了非常好的第一步！認識自己的不良習慣就是改善的開始，退出後跟著建議微調，定能拿到更高分！",
+          "不要氣餒，姿勢習慣是慢慢養成的！多依靠椅背或抬高視野，你的脊椎會感謝你的用心！",
+          "潛力無窮！留意下方紅色提示部位，退出並微調一下，感受身體肌肉瞬間的輕鬆吧！"
+        ];
+        return { icon: "🌱", text: quotes[Math.floor(Math.random() * quotes.length)] };
+      } else {
+        const quotes = [
+          "每一次檢測都是身體的寶貴提醒！現在正是告別疲勞的好時機，退出後跟隨建議調校，找回輕盈體態！",
+          "給疲憊的身體一個放鬆的機會！立刻退出並針對紅字部位修正，你一定能看見驚喜的進步！",
+          "守護健康永遠不嫌晚！試著把頭抬高、手肘放鬆、背貼緊椅背，讓我們一起向健康滿分邁進！"
+        ];
+        return { icon: "💪", text: quotes[Math.floor(Math.random() * quotes.length)] };
+      }
+    }
+
+    // --- 提交姿勢評定：獨立展示結果與改善建議框（修復無畫面 Bug） ---
+    function submitAssessment() {
+      // 禁用主介面提交按鈕，避免重複觸發
+      const mainBtn = document.getElementById("btn-main-submit");
+      if (mainBtn) mainBtn.disabled = true;
+
+      const result = computeEvaluation();
+      const currentScore = result.totalScore;
+
+      const resScoreText = document.getElementById("res-score-text");
+      const resBadge = document.getElementById("res-badge");
+      const resTitle = document.getElementById("res-title");
+      const resIcon = document.getElementById("res-icon");
+      const resQuoteIcon = document.getElementById("res-quote-icon");
+      const resQuoteText = document.getElementById("res-quote-text");
+      const stressRow = document.getElementById("res-stress-info");
+      const listContainer = document.getElementById("res-report-list");
+
+      // 獨立 100 分制數值顯示
+      resScoreText.innerHTML = `${currentScore} <span>/ 100 分</span>`;
+
+      // 注入專屬鼓勵金句
+      const encourage = getEncouragement(currentScore);
+      resQuoteIcon.textContent = encourage.icon;
+      resQuoteText.textContent = encourage.text;
+
+      // 評級徽章與視覺判定
+      if (currentScore >= 85) {
+        resIcon.textContent = "🏆";
+        resTitle.textContent = "獨立評測結果：黃金健康體態！";
+        resBadge.textContent = "🌟 人體工學大師";
+        resBadge.style.background = "#dcfce7";
+        resBadge.style.color = "#15803d";
+      } else if (currentScore >= 60) {
+        resIcon.textContent = "⚖️";
+        resTitle.textContent = "獨立評測結果：體態尚可，部分關節需調整！";
+        resBadge.textContent = "⚠️ 輕度不良姿勢";
+        resBadge.style.background = "#fef9c3";
+        resBadge.style.color = "#854d0e";
+      } else {
+        resIcon.textContent = "🚨";
+        resTitle.textContent = "獨立評測結果：高危險疲勞體態！";
+        resBadge.textContent = "❌ 嚴重勞損高危";
+        resBadge.style.background = "#fee2e2";
+        resBadge.style.color = "#991b1b";
+      }
+
+      // 頸椎受壓計算徽章
+      let stressBadge = "";
+      if (result.stressKg <= 8) {
+        stressBadge = '<span style="color:#16a34a; font-weight:800;">🟢 健康極佳（承受天然頭重約 5kg）</span>';
+      } else if (result.stressKg <= 16) {
+        stressBadge = '<span style="color:#ca8a04; font-weight:800;">🟡 輕度受壓（相當於掛了一大桶瓶裝水）</span>';
+      } else {
+        stressBadge = '<span style="color:#dc2626; font-weight:800;">🔴 嚴重高危！等同頸椎背負 27kg 小學生！</span>';
+      }
+      stressRow.innerHTML = `<span>頸椎承受壓力：<b>${result.stressKg.toFixed(1)} kg</b></span> <span>｜</span> ${stressBadge}`;
+
+      // 獨立展示每一項關節分析與專屬改善建議
+      listContainer.innerHTML = "";
+      result.items.forEach(it => {
+        const div = document.createElement("div");
+        div.className = `report-item ${it.ok ? 'pass' : 'fail'}`;
+        div.innerHTML = `
+          <div style="display:flex; justify-content:space-between; font-weight:800;">
+            <span>${it.ok ? '✅' : '⚠️'} ${it.name}（當前：${it.current} / 標準：${it.ideal}）</span>
+            <span>得分：${it.scorePart} / ${it.maxPart} 分</span>
+          </div>
+          <span class="advice">${it.advice}</span>
+        `;
+        listContainer.appendChild(div);
+      });
+
+      // 顯示獨立結果彈窗
+      const modal = document.getElementById("resultModal");
+      if (modal) {
+        modal.classList.remove("hidden");
+      }
+    }
+
+    // 退出評測框：關閉視窗，讓用戶回到操作台重新微調姿勢後再次提交
+    function exitAndRefine() {
+      const modal = document.getElementById("resultModal");
+      if (modal) modal.classList.add("hidden");
+
+      // 重新啟用主提交按鈕
+      const mainBtn = document.getElementById("btn-main-submit");
+      if (mainBtn) mainBtn.disabled = false;
+
+      document.getElementById("ui-status-hint").textContent = "已退出報告。請參考剛才的改善建議微調關節，調整完畢後可再次提交！";
+    }
+
+    function switchOtherScenario() {
+      exitAndRefine();
+      changeMode(currentMode === "DESK" ? "PHONE" : "DESK");
+    }
+
+    // --- Canvas 骨骼畫布繪製 ---
+    function drawScene() {
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      // 地板
+      ctx.fillStyle = "#e2e8f0";
+      ctx.fillRect(0, H - 35, W, 35);
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, H - 35);
+      ctx.lineTo(W, H - 35);
+      ctx.stroke();
+
+      if (currentMode === "DESK") {
+        drawDeskEnvironment();
+      } else {
+        drawPhoneEnvironment();
+      }
+    }
+
+    // 繪製電腦工作站環境與人體工學椅（重構自然手肘運動學 + 椅背動態連動）
+    function drawDeskEnvironment() {
+      const H = canvas.height;
+      const hipX = 220;
+      const hipY = 265;
+      const deskX = 330;
+      const deskY = 210;
+
+      // 1. 辦公桌與桌腳
+      ctx.fillStyle = "#cbd5e1";
+      ctx.fillRect(deskX, deskY, 195, 14);
+      ctx.fillStyle = "#64748b";
+      ctx.fillRect(deskX + 20, deskY + 14, 12, 140);
+      ctx.fillRect(deskX + 165, deskY + 14, 12, 140);
+
+      // 2. 顯示器與升降支架
+      const lift = deskPose.screenHeight * 0.7;
+      const monScreenY = deskY - 95 - lift;
+
+      ctx.fillStyle = "#334155";
+      ctx.fillRect(deskX + 80, deskY - 6, 46, 6);
+      ctx.fillRect(deskX + 98, monScreenY + 62, 10, 32 + lift);
+
+      // 螢幕主體與顯示畫面
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(deskX + 75, monScreenY, 9, 66);
+      ctx.fillStyle = "#38bdf8";
+      ctx.fillRect(deskX + 72, monScreenY + 4, 3, 58);
+
+      // 鍵盤與滑鼠
+      ctx.fillStyle = "#475569";
+      ctx.fillRect(deskX + 15, deskY - 5, 42, 5);
+      ctx.fillRect(deskX + 68, deskY - 4, 10, 4);
+
+      // 3. 人體工學網椅（連動 deskPose.backAngle）
+      drawErgonomicOfficeChair(hipX, hipY, H);
+
+      // 4. 人體脊椎與頸部連動
+      const spineRad = ((180 - deskPose.backAngle) * Math.PI) / 180;
+      const shoulderX = hipX - Math.cos(spineRad) * 105;
+      const shoulderY = hipY - Math.sin(spineRad) * 105;
+
+      const neckRad = (deskPose.neckAngle * Math.PI) / 180;
+      const headX = shoulderX + Math.sin(neckRad) * 32;
+      const headY = shoulderY - Math.cos(neckRad) * 32;
+
+      // 5. 膝蓋與腿部連動
+      const kneeX = hipX + 90;
+      const kneeY = hipY + 10;
+      const kneeRad = ((deskPose.kneeAngle - 90) * Math.PI) / 180;
+      const footX = kneeX - Math.sin(kneeRad) * 82;
+      const footY = kneeY + Math.cos(kneeRad) * 82;
+
+      // 6. 手肘運動學模型
+      const upperArmLen = 48;
+      const forearmLen = 46;
+
+      const upperArmAngleDeg = 75 - (deskPose.elbowAngle - 90) * 0.9;
+      const upperArmRad = (upperArmAngleDeg * Math.PI) / 180;
+
+      const elbowX = shoulderX + Math.cos(upperArmRad) * upperArmLen;
+      const elbowY = shoulderY + Math.sin(upperArmRad) * upperArmLen;
+
+      const forearmAngleDeg = upperArmAngleDeg - (180 - deskPose.elbowAngle);
+      const forearmRad = (forearmAngleDeg * Math.PI) / 180;
+
+      const wristX = elbowX + Math.cos(forearmRad) * forearmLen;
+      const wristY = elbowY + Math.sin(forearmRad) * forearmLen;
+
+      renderSkeleton({
+        headX, headY, shoulderX, shoulderY, hipX, hipY,
+        kneeX, kneeY, footX, footY,
+        elbowX, elbowY, wristX, wristY,
+        targetX: deskX + 72,
+        targetY: monScreenY + 30
+      });
+    }
+
+    // 專用函式：繪製現代人體工學網布電腦椅（隨 backAngle 動態傾斜）
+    function drawErgonomicOfficeChair(hipX, hipY, canvasH) {
+      const chairSeatY = hipY + 12;
+      const floorY = canvasH - 35;
+
+      // (A) 五星腳座與滾輪
+      const baseCenterY = floorY - 10;
+      ctx.strokeStyle = "#1e293b";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(hipX - 58, baseCenterY);
+      ctx.lineTo(hipX + 38, baseCenterY);
+      ctx.stroke();
+
+      // 滾輪
+      ctx.fillStyle = "#334155";
+      ctx.beginPath();
+      ctx.arc(hipX - 55, floorY - 5, 5, 0, Math.PI * 2);
+      ctx.arc(hipX - 10, floorY - 5, 5, 0, Math.PI * 2);
+      ctx.arc(hipX + 35, floorY - 5, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // (B) 氣壓升降金屬中軸桿
+      ctx.fillStyle = "#64748b";
+      ctx.fillRect(hipX - 14, chairSeatY + 14, 8, baseCenterY - (chairSeatY + 14));
+      ctx.fillStyle = "#94a3b8";
+      ctx.fillRect(hipX - 12, chairSeatY + 14, 4, baseCenterY - (chairSeatY + 14));
+
+      // 坐墊底座托盤
+      ctx.fillStyle = "#1e293b";
+      ctx.fillRect(hipX - 32, chairSeatY + 8, 44, 8);
+
+      // (C) 厚實弧形人體工學坐墊
+      ctx.fillStyle = "#334155";
+      ctx.beginPath();
+      ctx.roundRect(hipX - 48, chairSeatY, 86, 12, [6, 8, 4, 4]);
+      ctx.fill();
+      ctx.strokeStyle = "#0ea5e9";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // (D) 可微調椅背（連動 deskPose.backAngle）
+      const backPivotX = hipX - 22;
+      const backPivotY = chairSeatY + 4;
+
+      // 支撐連桿
+      ctx.strokeStyle = "#1e293b";
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(hipX - 28, chairSeatY + 10);
+      ctx.lineTo(backPivotX, backPivotY);
+      ctx.stroke();
+
+      const rad = (deskPose.backAngle * Math.PI) / 180;
+      const backLen = 100;
+      const backTopX = backPivotX + Math.cos(rad) * backLen;
+      const backTopY = backPivotY - Math.sin(rad) * backLen;
+
+      // 腰部支撐點 (Lumbar Support)
+      const lumbarX = backPivotX + Math.cos(rad) * (backLen * 0.42);
+      const lumbarY = backPivotY - Math.sin(rad) * (backLen * 0.42);
+
+      // 椅背主框架
+      ctx.strokeStyle = "#1e293b";
+      ctx.lineWidth = 9;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(backPivotX, backPivotY);
+      ctx.lineTo(lumbarX, lumbarY);
+      ctx.lineTo(backTopX, backTopY);
+      ctx.stroke();
+
+      // 網布藍色內襯
+      ctx.strokeStyle = "#38bdf8";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(backPivotX, backPivotY);
+      ctx.lineTo(lumbarX, lumbarY);
+      ctx.lineTo(backTopX, backTopY);
+      ctx.stroke();
+
+      // 人體工學專屬腰靠凸點 (Lumbar Cushion)
+      ctx.fillStyle = "#0284c7";
+      ctx.beginPath();
+      ctx.arc(lumbarX + 3, lumbarY, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 頂部頭枕
+      ctx.fillStyle = "#1e293b";
+      ctx.beginPath();
+      ctx.ellipse(backTopX + 2, backTopY, 7, 13, rad - Math.PI / 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // (E) 辦公椅 T 型扶手
+      ctx.strokeStyle = "#475569";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(hipX - 10, chairSeatY + 8);
+      ctx.lineTo(hipX - 10, chairSeatY - 26);
+      ctx.lineTo(hipX + 16, chairSeatY - 26);
+      ctx.stroke();
+    }
+
+    // 繪製手機環境
+    function drawPhoneEnvironment() {
+      const hipX = 220;
+      const hipY = 265;
+
+      // 休閒椅
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(hipX - 40, hipY + 12);
+      ctx.lineTo(hipX + 35, hipY + 12);
+      ctx.moveTo(hipX - 35, hipY + 10);
+      ctx.lineTo(hipX - 45, hipY - 75);
+      ctx.stroke();
+
+      // 軀幹傾角
+      const spineRad = ((180 - phonePose.spineStraight) * Math.PI) / 180;
+      const shoulderX = hipX - Math.cos(spineRad) * 100;
+      const shoulderY = hipY - Math.sin(spineRad) * 100;
+
+      const neckRad = (phonePose.phoneNeckAngle * Math.PI) / 180;
+      const headX = shoulderX + Math.sin(neckRad) * 32;
+      const headY = shoulderY - Math.cos(neckRad) * 32;
+
+      const kneeX = hipX + 85;
+      const kneeY = hipY + 10;
+      const footX = kneeX + 5;
+      const footY = kneeY + 80;
+
+      // 手機與雙手位置（動態連動 armLiftAngle）
+      const liftRatio = (phonePose.armLiftAngle - 15) / 55; // 0 ~ 1
+      const armUpperDeg = 75 - liftRatio * 25;
+      const upperRad = (armUpperDeg * Math.PI) / 180;
+      const elbowX = shoulderX + Math.cos(upperRad) * 38;
+      const elbowY = shoulderY + Math.sin(upperRad) * 38;
+
+      const phoneX = shoulderX + 45 + liftRatio * 25;
+      const phoneY = shoulderY + 50 - liftRatio * 65;
+      const wristX = phoneX - 6;
+      const wristY = phoneY + 6;
+
+      // 繪製手機
+      ctx.save();
+      ctx.translate(phoneX, phoneY);
+      ctx.rotate(-0.25);
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(-5, -22, 10, 44);
+      ctx.fillStyle = "#38bdf8";
+      ctx.fillRect(-3.5, -20, 7, 40);
+      ctx.restore();
+
+      renderSkeleton({
+        headX, headY, shoulderX, shoulderY, hipX, hipY,
+        kneeX, kneeY, footX, footY,
+        elbowX, elbowY, wristX, wristY,
+        targetX: phoneX,
+        targetY: phoneY
+      });
+    }
+
+    // 骨骼人像共用繪製函式
+    function renderSkeleton(p) {
+      // 視線虛線
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = "#ca8a04";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p.headX + 8, p.headY);
+      ctx.lineTo(p.targetX, p.targetY);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      // 腿部
+      ctx.strokeStyle = "#334155";
+      ctx.lineWidth = 9;
+      ctx.beginPath();
+      ctx.moveTo(p.hipX, p.hipY);
+      ctx.lineTo(p.kneeX, p.kneeY);
+      ctx.lineTo(p.footX, p.footY);
+      ctx.stroke();
+
+      // 脊椎
+      ctx.strokeStyle = "#0284c7";
+      ctx.lineWidth = 12;
+      ctx.beginPath();
+      ctx.moveTo(p.hipX, p.hipY);
+      ctx.lineTo(p.shoulderX, p.shoulderY);
+      ctx.stroke();
+
+      // 頸椎
+      ctx.strokeStyle = "#f97316";
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(p.shoulderX, p.shoulderY);
+      ctx.lineTo(p.headX, p.headY);
+      ctx.stroke();
+
+      // 手臂（大臂 + 小臂）
+      ctx.strokeStyle = "#0369a1";
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(p.shoulderX, p.shoulderY);
+      ctx.lineTo(p.elbowX, p.elbowY);
+      ctx.lineTo(p.wristX, p.wristY);
+      ctx.stroke();
+
+      // 關節點
+      const joints = [
+        { x: p.shoulderX, y: p.shoulderY },
+        { x: p.elbowX, y: p.elbowY },
+        { x: p.wristX, y: p.wristY },
+        { x: p.hipX, y: p.hipY },
+        { x: p.kneeX, y: p.kneeY },
+        { x: p.footX, y: p.footY }
+      ];
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 2.5;
+      joints.forEach(j => {
+        ctx.beginPath();
+        ctx.arc(j.x, j.y, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      // 頭部
+      ctx.fillStyle = "#fed7aa";
+      ctx.strokeStyle = "#ea580c";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(p.headX, p.headY, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // 眼睛
+      ctx.fillStyle = "#0f172a";
+      ctx.beginPath();
+      ctx.arc(p.headX + 9, p.headY - 2, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 初始化
+    window.onload = () => {
+      renderControls();
+      drawScene();
+    };
+  </script>
+</body>
+</html>
